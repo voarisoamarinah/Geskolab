@@ -15,7 +15,7 @@ Le projet est structuré de manière modulaire pour garantir performance et séc
 -   **Backend** : Node.js & Express en **TypeScript**, sécurisé par JWT et Cookies HttpOnly.
 -   **Base de données** : PostgreSQL, utilisant des **Vues SQL optimisées** pour le calcul en temps réel des moyennes et des soldes financiers.
 
-## 🎯 Fonctionnalités du MVP (Objectif 30/04/2026)
+## 🎯 Fonctionnalités du MVP
 
 1.  **Dashboard Administratif** : Pilotage des années scolaires et des effectifs.
 2.  **Gestion Pédagogique** : Annuaire des professeurs, affectations par matière et niveaux.
