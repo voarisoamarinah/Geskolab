@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import * as UserCtrl from '../controllers/user.controller.js';
 import validate from '../middlewares/validateResource.js';
-import { createUser, updateUser, userId } from '../validations/user.validation.js';
+import { createUser, queryUser, updateUser, userId } from '../validations/user.validation.js';
 
 const router = Router();
 
-router.get('/', UserCtrl.getUsersHandler);
+router.get('/', validate(queryUser), UserCtrl.getUsersHandler);
 
 router.get('/:id', validate(userId), UserCtrl.getUserByIdHandler);
 

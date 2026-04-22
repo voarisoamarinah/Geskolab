@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as UserService from '../services/user.service.js';
-import { CreateUserInput } from '../validations/user.validation.js';
+import { CreateUserInput, QueryUserInput } from '../validations/user.validation.js';
 
 export const createUserHandler = async (
     req: Request<{}, {}, CreateUserInput>,
@@ -21,9 +21,19 @@ export const createUserHandler = async (
     }
 };
 
-export const getUsersHandler = async (req: Request, res: Response) => {
-    const users = await UserService.findAllUsers();
-    return res.status(200).json(users);
+export const getUsersHandler = async (
+    req: Request,
+    res: Response
+) => {
+    try {
+        const query = req.query as unknown as QueryUserInput;
+
+        const result = await UserService.findAllUsers(query);
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erreur lors de la récupération" });
+    }
 };
 
 export const getUserByIdHandler = async (req: Request, res: Response) => {
@@ -55,8 +65,8 @@ export const deleteUserHandler = async (req: Request, res: Response) => {
 
 export const toggleUserStatusHandler = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { status } = req.body; 
-    
+    const { status } = req.body;
+
     const user = await UserService.updateUser(parseInt(id[0]), { status });
     return res.status(200).json({ message: `Utilisateur désormais ${status}`, user });
 };

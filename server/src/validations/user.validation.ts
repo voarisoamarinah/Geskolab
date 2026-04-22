@@ -13,6 +13,18 @@ export const createUser = z.object({
     }),
 });
 
+export const queryUser = z.object({
+    query: z.object({
+        page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : 1)),
+        limit: z.string().optional().transform((val) => (val ? parseInt(val, 10) : 10)),
+        username: z.string().optional(),
+        role_id: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
+        status: z.enum(['active', 'inactive', 'suspended']).optional(),
+        sortBy: z.enum(['username', 'created_at']).optional().default('created_at'),
+        sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+    }),
+});
+
 export const updateUser = z.object({
     params: z.object({
         id: z.string().transform((val) => parseInt(val, 10)),
@@ -25,11 +37,12 @@ export const updateUser = z.object({
     }).strict(),
 });
 
-export const userId  = z.object({
+export const userId = z.object({
     params: z.object({
         id: z.string().transform((val) => parseInt(val, 10)),
     }),
 });
 
+export type QueryUserInput = z.infer<typeof queryUser>['query'];
 export type UpdateUserInput = z.infer<typeof updateUser>['body'];
 export type CreateUserInput = z.infer<typeof createUser>['body'];
