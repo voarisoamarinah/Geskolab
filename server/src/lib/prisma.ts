@@ -1,7 +1,17 @@
+import { PrismaClient } from '../generated/prisma/client.js'; 
+import pkg from 'pg';
+const { Pool } = pkg;
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client.js';
+import dotenv from 'dotenv';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+dotenv.config();
+
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL 
+});
+
+const adapter = new PrismaPg(pool);
+
 const prisma = new PrismaClient({ adapter });
-// On l'exporte pour que tous nos controllers puissent l'utiliser
+
 export default prisma;
