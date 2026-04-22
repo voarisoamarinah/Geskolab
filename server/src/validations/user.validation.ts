@@ -13,4 +13,23 @@ export const createUser = z.object({
     }),
 });
 
+export const updateUser = z.object({
+    params: z.object({
+        id: z.string().transform((val) => parseInt(val, 10)),
+    }),
+    body: z.object({
+        username: z.string().min(3).optional(),
+        password: z.string().min(6).optional(),
+        role_id: z.number().optional(),
+        status: z.enum(['active', 'inactive', 'suspended']).optional(),
+    }).strict(),
+});
+
+export const userId  = z.object({
+    params: z.object({
+        id: z.string().transform((val) => parseInt(val, 10)),
+    }),
+});
+
+export type UpdateUserInput = z.infer<typeof updateUser>['body'];
 export type CreateUserInput = z.infer<typeof createUser>['body'];
