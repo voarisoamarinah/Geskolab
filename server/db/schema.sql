@@ -31,6 +31,7 @@ CREATE TABLE Users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    role_id INT NOT NULL REFERENCES Roles (id) ON DELETE CASCADE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (
         status IN (
@@ -39,12 +40,6 @@ CREATE TABLE Users (
             'suspended'
         )
     )
-);
-
-CREATE TABLE UserRoles (
-    user_id INT NOT NULL REFERENCES Users (id) ON DELETE CASCADE,
-    role_id INT NOT NULL REFERENCES Roles (id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, role_id)
 );
 
 CREATE TABLE RolePermissions (
@@ -137,8 +132,6 @@ CREATE TABLE Teachers (
         status IN ('active', 'inactive')
     )
 );
-
-ALTER TABLE Users ADD COLUMN teacher_id INT REFERENCES Teachers(id) ON DELETE SET NULL;
 
 CREATE TABLE TeacherAssignments (
     id SERIAL PRIMARY KEY,
