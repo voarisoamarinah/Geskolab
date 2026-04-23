@@ -62,11 +62,3 @@ export const deleteUserHandler = async (req: Request, res: Response) => {
         return res.status(500).json({ message: "Erreur lors de la suppression" });
     }
 };
-
-export const toggleUserStatusHandler = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const user = await UserService.updateUser(parseInt(id[0]), { status });
-    return res.status(200).json({ message: `Utilisateur désormais ${status}`, user });
-};
