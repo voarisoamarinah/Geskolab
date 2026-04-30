@@ -1,0 +1,380 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model academicperiods {
+  id               Int           @id @default(autoincrement())
+  academic_year_id Int
+  label            String        @db.VarChar(100)
+  start_date       DateTime      @db.Date
+  end_date         DateTime      @db.Date
+  is_closed        Boolean       @default(false)
+  academicyears    academicyears @relation(fields: [academic_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  assessments      assessments[]
+  finalexams       finalexams[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model academicyears {
+  id                 Int                  @id @default(autoincrement())
+  label              String               @unique @db.VarChar(50)
+  start_date         DateTime             @db.Date
+  end_date           DateTime             @db.Date
+  is_active          Boolean              @default(false)
+  academicperiods    academicperiods[]
+  classes            classes[]
+  enrollments        enrollments[]
+  feestructures      feestructures[]
+  levelsubjects      levelsubjects[]
+  schedules          schedules[]
+  teacherassignments teacherassignments[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model assessments {
+  id                 Int             @id @default(autoincrement())
+  class_id           Int
+  subject_id         Int
+  teacher_id         Int
+  academic_period_id Int
+  title              String          @db.VarChar(200)
+  type               String?         @db.VarChar(50)
+  max_score          Decimal         @default(20) @db.Decimal(6, 2)
+  weight             Decimal         @default(1) @db.Decimal(5, 2)
+  assessment_date    DateTime?       @db.Date
+  academicperiods    academicperiods @relation(fields: [academic_period_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  classes            classes         @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subjects           subjects        @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  teachers           teachers        @relation(fields: [teacher_id], references: [id], onUpdate: NoAction)
+  grades             grades[]
+
+  @@index([academic_period_id], map: "idx_assessments_period")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model attendance {
+  id              Int         @id @default(autoincrement())
+  enrollment_id   Int
+  schedule_id     Int
+  attendance_date DateTime    @default(dbgenerated("CURRENT_DATE")) @db.Date
+  status          String      @default("present") @db.VarChar(20)
+  enrollments     enrollments @relation(fields: [enrollment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  schedules       schedules   @relation(fields: [schedule_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([enrollment_id, schedule_id, attendance_date])
+  @@index([enrollment_id], map: "idx_attendance_enroll")
+}
+
+model classes {
+  id                 Int                  @id @default(autoincrement())
+  level_id           Int
+  academic_year_id   Int
+  name               String               @db.VarChar(100)
+  classroom_id       Int?
+  assessments        assessments[]
+  academicyears      academicyears        @relation(fields: [academic_year_id], references: [id], onUpdate: NoAction)
+  classrooms         classrooms?          @relation(fields: [classroom_id], references: [id], onUpdate: NoAction)
+  levels             levels               @relation(fields: [level_id], references: [id], onUpdate: NoAction)
+  enrollments        enrollments[]
+  finalexams         finalexams[]
+  schedules          schedules[]
+  teacherassignments teacherassignments[]
+
+  @@unique([level_id, academic_year_id, name], map: "uq_classes")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model classrooms {
+  id        Int         @id @default(autoincrement())
+  name      String      @db.VarChar(100)
+  capacity  Int
+  type      String?     @db.VarChar(50)
+  classes   classes[]
+  schedules schedules[]
+}
+
+model enrollments {
+  id               Int           @id @default(autoincrement())
+  student_id       Int
+  class_id         Int
+  academic_year_id Int
+  enrollment_date  DateTime      @default(dbgenerated("CURRENT_DATE")) @db.Date
+  is_repeating     Boolean       @default(false)
+  attendance       attendance[]
+  academicyears    academicyears @relation(fields: [academic_year_id], references: [id], onUpdate: NoAction)
+  classes          classes       @relation(fields: [class_id], references: [id], onUpdate: NoAction)
+  students         students      @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  payments         payments[]
+
+  @@unique([student_id, academic_year_id])
+  @@index([class_id], map: "idx_enrollments_class")
+  @@index([student_id], map: "idx_enrollments_student")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model feeinstallments {
+  id                 Int                  @id @default(autoincrement())
+  fee_structure_id   Int
+  installment_number Int                  @db.SmallInt
+  label              String?              @db.VarChar(100)
+  amount_due         Decimal              @db.Decimal(12, 2)
+  due_date           DateTime             @db.Date
+  feestructures      feestructures        @relation(fields: [fee_structure_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  paymentallocations paymentallocations[]
+
+  @@unique([fee_structure_id, installment_number])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model feestructures {
+  id               Int               @id @default(autoincrement())
+  fee_type_id      Int
+  level_id         Int
+  academic_year_id Int
+  total_amount     Decimal           @db.Decimal(12, 2)
+  description      String?
+  feeinstallments  feeinstallments[]
+  academicyears    academicyears     @relation(fields: [academic_year_id], references: [id], onUpdate: NoAction)
+  feetypes         feetypes          @relation(fields: [fee_type_id], references: [id], onUpdate: NoAction)
+  levels           levels            @relation(fields: [level_id], references: [id], onUpdate: NoAction)
+  payments         payments[]
+
+  @@unique([fee_type_id, level_id, academic_year_id])
+}
+
+model feetypes {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique @db.VarChar(100)
+  description   String?
+  feestructures feestructures[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model finalexams {
+  id                 Int             @id @default(autoincrement())
+  subject_id         Int
+  class_id           Int
+  academic_period_id Int
+  student_id         Int
+  score              Decimal?        @db.Decimal(6, 2)
+  comment            String?
+  created_at         DateTime        @default(now()) @db.Timestamp(6)
+  academicperiods    academicperiods @relation(fields: [academic_period_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  classes            classes         @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students           students        @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subjects           subjects        @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([subject_id, academic_period_id, student_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model grades {
+  id            Int         @id @default(autoincrement())
+  assessment_id Int
+  student_id    Int
+  score         Decimal?    @db.Decimal(6, 2)
+  comment       String?
+  created_at    DateTime    @default(now()) @db.Timestamp(6)
+  assessments   assessments @relation(fields: [assessment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students      students    @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([assessment_id, student_id])
+  @@index([assessment_id], map: "idx_grades_assessment")
+  @@index([student_id], map: "idx_grades_student")
+}
+
+model levels {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(100)
+  code          String          @unique @db.VarChar(20)
+  classes       classes[]
+  feestructures feestructures[]
+  levelsubjects levelsubjects[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model levelsubjects {
+  level_id         Int
+  subject_id       Int
+  academic_year_id Int
+  coefficient      Decimal       @default(1) @db.Decimal(5, 2)
+  academicyears    academicyears @relation(fields: [academic_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  levels           levels        @relation(fields: [level_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subjects         subjects      @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([level_id, subject_id, academic_year_id])
+}
+
+model parents {
+  id                Int              @id @default(autoincrement())
+  name              String           @db.VarChar(100)
+  first_name        String           @db.VarChar(100)
+  profession        String?          @db.VarChar(150)
+  emergency_contact String?          @db.VarChar(30)
+  studentparents    studentparents[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model paymentallocations {
+  id                 Int             @id @default(autoincrement())
+  payment_id         Int
+  fee_installment_id Int
+  allocated_amount   Decimal         @db.Decimal(12, 2)
+  feeinstallments    feeinstallments @relation(fields: [fee_installment_id], references: [id], onUpdate: NoAction)
+  payments           payments        @relation(fields: [payment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([payment_id, fee_installment_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payments {
+  id                 Int                  @id @default(autoincrement())
+  fee_structure_id   Int
+  payment_date       DateTime             @default(dbgenerated("CURRENT_DATE")) @db.Date
+  amount_paid        Decimal              @db.Decimal(12, 2)
+  payment_method     String?              @db.VarChar(50)
+  receipt_number     String?              @unique @db.VarChar(100)
+  remarks            String?
+  recorded_by        Int?
+  enrollment_id      Int?
+  paymentallocations paymentallocations[]
+  enrollments        enrollments?         @relation(fields: [enrollment_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  feestructures      feestructures        @relation(fields: [fee_structure_id], references: [id], onUpdate: NoAction)
+
+  @@index([enrollment_id], map: "idx_payments_enroll")
+}
+
+model permissions {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique @db.VarChar(100)
+  rolepermissions rolepermissions[]
+}
+
+model resources {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(100)
+  slug            String            @unique @db.VarChar(100)
+  rolepermissions rolepermissions[]
+}
+
+model rolepermissions {
+  role_id       Int
+  resource_id   Int
+  permission_id Int
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  resources     resources   @relation(fields: [resource_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([role_id, resource_id, permission_id])
+}
+
+model roles {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique @db.VarChar(100)
+  rolepermissions rolepermissions[]
+  users           users[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model schedules {
+  id               Int           @id @default(autoincrement())
+  class_id         Int
+  subject_id       Int
+  teacher_id       Int
+  classroom_id     Int
+  academic_year_id Int
+  day_of_week      Int           @db.SmallInt
+  start_time       DateTime      @db.Time(6)
+  end_time         DateTime      @db.Time(6)
+  attendance       attendance[]
+  academicyears    academicyears @relation(fields: [academic_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  classes          classes       @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  classrooms       classrooms    @relation(fields: [classroom_id], references: [id], onUpdate: NoAction)
+  subjects         subjects      @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  teachers         teachers      @relation(fields: [teacher_id], references: [id], onUpdate: NoAction)
+
+  @@index([class_id], map: "idx_schedules_class")
+}
+
+model studentparents {
+  student_id        Int
+  parent_id         Int
+  relationship_type String   @db.VarChar(50)
+  parents           parents  @relation(fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  students          students @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([student_id, parent_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model students {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.VarChar(100)
+  first_name     String           @db.VarChar(100)
+  matricule      String           @unique @db.VarChar(50)
+  date_of_birth  DateTime?        @db.Date
+  gender         String?          @db.VarChar(10)
+  address        String?
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  status         String           @default("active") @db.VarChar(20)
+  enrollments    enrollments[]
+  finalexams     finalexams[]
+  grades         grades[]
+  studentparents studentparents[]
+}
+
+model subjects {
+  id                 Int                  @id @default(autoincrement())
+  title              String               @db.VarChar(150)
+  code               String               @unique @db.VarChar(30)
+  assessments        assessments[]
+  finalexams         finalexams[]
+  levelsubjects      levelsubjects[]
+  schedules          schedules[]
+  teacherassignments teacherassignments[]
+}
+
+model teacherassignments {
+  id               Int           @id @default(autoincrement())
+  teacher_id       Int
+  subject_id       Int
+  class_id         Int
+  academic_year_id Int
+  academicyears    academicyears @relation(fields: [academic_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  classes          classes       @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subjects         subjects      @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  teachers         teachers      @relation(fields: [teacher_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([teacher_id, subject_id, class_id, academic_year_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model teachers {
+  id                 Int                  @id @default(autoincrement())
+  name               String               @db.VarChar(100)
+  first_name         String               @db.VarChar(100)
+  bio                String?
+  hiring_date        DateTime?            @db.Date
+  specialization     String?              @db.VarChar(150)
+  status             String               @default("active") @db.VarChar(20)
+  assessments        assessments[]
+  schedules          schedules[]
+  teacherassignments teacherassignments[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique @db.VarChar(100)
+  password_hash String
+  role_id       Int
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  status        String   @default("active") @db.VarChar(20)
+  roles         roles    @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
